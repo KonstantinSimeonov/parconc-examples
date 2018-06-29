@@ -43,6 +43,8 @@ import Data.Array.ST
 import System.Mem
 import Data.Maybe
 
+import qualified KMeansKon as Kon
+
 import qualified Data.Vector as Vector
 import Data.Vector (Vector)
 import qualified Data.Vector.Mutable as MVector
@@ -60,6 +62,7 @@ main = runInUnboundThread $ do
   t0 <- getCurrentTime
   final_clusters <- case args of
     ["seq"       ] -> kmeans_seq               nclusters points clusters
+    ["kon",     n] -> kmeans_kon      (read n) nclusters points clusters
     ["strat",   n] -> kmeans_strat    (read n) nclusters points clusters
     ["par",     n] -> kmeans_par      (read n) nclusters points clusters
     ["divpar",  n] -> kmeans_div_par  (read n) nclusters points clusters npoints
@@ -94,6 +97,14 @@ tooMany = 80
 -- >>
 
 -- -----------------------------------------------------------------------------
+-- K-Means: konskata strategiq
+
+kmeans_kon :: Int -> Int -> [Point] -> [Cluster] -> IO [Cluster]
+kmeans_kon numChunks nclusters points clusters =
+  let chunks = split numChunks points
+  in pure $ Kon.findMeans chunks clusters
+
+-- -----------------------------------------------------------------------------
 -- K-Means: repeatedly step until convergence (Strategies)
 
 -- <<kmeans_strat
@@ -104,11 +115,11 @@ kmeans_strat numChunks nclusters points clusters =
 
       loop :: Int -> [Cluster] -> IO [Cluster]
       loop n clusters | n > tooMany = do
-        printf "giving up."
+        --printf "giving up."
         return clusters
       loop n clusters = do
-        printf "iteration %d\n" n
-        putStr (unlines (map show clusters))
+        --printf "iteration %d\n" n
+        --putStr (unlines (map show clusters))
         let clusters' = parSteps_strat nclusters clusters chunks -- <2>
         if clusters' == clusters
            then return clusters
